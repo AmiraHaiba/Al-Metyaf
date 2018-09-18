@@ -27,7 +27,8 @@ import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.imgproc.Imgproc;
-import org.w3c.dom.Text;
+import android.view.View;
+import android.widget.Button;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -38,22 +39,44 @@ public class MainActivity extends AppCompatActivity {
 
     ImageView imageView;
     Toolbar toolbar;
-    TextView textView;
     File file;
     Uri uri;
     Intent camIntent,galIntent,cropIntent;
     final int RequestPermissionCode = 1 ;
-    DisplayMetrics displayMetrics;
-    int height,width;
-
+    Button add_data;
+    TextView textView,slope,intercept;
+    double m, c ;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        toolbar = (Toolbar) findViewById(R.id.toolbar);
-        toolbar.setTitle("Crop Image");
-        setSupportActionBar(toolbar);
+        textView = findViewById(R.id.textView);
+        add_data = (Button)findViewById(R.id.add_data);
+        add_data.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+             slope =  (TextView) findViewById(R.id.slope);
+                intercept =  (TextView) findViewById(R.id.intercept);
+                if(!slope.getText().toString().trim().isEmpty() &&
+                        slope.getText().toString().trim() != "0" &&
+                        !intercept.getText().toString().trim().isEmpty()){
+                    try {
+                        m = Double.parseDouble(slope.getText().toString().trim());
+                        c = Double.parseDouble(intercept.getText().toString().trim());
+                        toolbar = (Toolbar) findViewById(R.id.toolbar);
+                        toolbar.setTitle("Crop Image");
+                        setSupportActionBar(toolbar);
+                        findViewById(R.id.form_layout).setVisibility(View.INVISIBLE);
+                        textView.setText("");
 
+                    }
+                    catch(Exception e){
+                        textView.setText("Enter a valid Double");
+                    }
+
+
+                }
+            }
+        });
         imageView = (ImageView)findViewById(R.id.imageView);
 
         int permissionCheck = ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.CAMERA);
@@ -63,15 +86,11 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-                if(!OpenCVLoader.initDebug()){
+        if(!OpenCVLoader.initDebug()){
             Log.d("MainActivity", "OpenCV not loaded");
         } else {
             Log.d("MainActivity", "OpenCV loaded");
         }
-
-//        imageView = (ImageView)findViewById(R.id.imageView);
-//        Intent i = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-//        startActivityForResult(i , 0);
     }
 
     private void RequestRuntimePermission(){
@@ -93,13 +112,10 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode ,  data);
-        Toast.makeText(this , resultCode+" "+requestCode , Toast.LENGTH_LONG).show();
-        if(requestCode == 0 && resultCode == RESULT_OK){
-            Log.w("In on Activity 0", " ");
+        if (requestCode == 0 && resultCode == RESULT_OK){
             CropImage();
         }
         else if (requestCode == 2){
-            // Toast.makeText(this , data+"" , Toast.LENGTH_LONG).show();
             if(data != null){
                 uri = data.getData();
                 CropImage();
@@ -111,30 +127,25 @@ public class MainActivity extends AppCompatActivity {
                 Bitmap bitmap = bundle.getParcelable("data");
                 imageView.setImageBitmap(bitmap);
 
-               // Mat src = new Mat();
-               Mat src = new Mat(bitmap.getHeight(), bitmap.getWidth(), CvType.CV_8UC3);
+                // Mat src = new Mat();
+                Mat src = new Mat(bitmap.getHeight(), bitmap.getWidth(), CvType.CV_8UC3);
 
                 //Turns the bitmap to a matrix
-                Log.w("Here 1",""+bitmap.getHeight()+" "+ bitmap.getWidth());
-                Toast.makeText(this , ""+bitmap.getHeight()+" "+ bitmap.getWidth(),Toast.LENGTH_SHORT).show();
                 Utils.bitmapToMat(bitmap,src);
                 //makes a new Matrix
-//                Log.w("Here 2","");
-//
+
+
                 Mat dst = new Mat(bitmap.getHeight(), bitmap.getWidth(), CvType.CV_8UC3);
-//                // turns the src rgb matrix into hsv matrix
-//                Log.w("Here 3","");
-//
+                // turns the src rgb matrix into hsv matrix
+
                 Imgproc.cvtColor(src, dst, Imgproc.COLOR_RGB2HSV ,3);
-//                //makes a new matrix arraylist
-//                Log.w("Here 4","");
-//
+                //makes a new matrix arraylist
+
                 List<Mat> image = new ArrayList<>(3);
-//                //split the hsv into 3 matrcies and add them to the arraylist
-               Core.split(dst,image);
-//                Log.w("Here 5","");
-//
-//                // each matrix is 50*50 where each index has an array of type double
+                //split the hsv into 3 matrcies and add them to the arraylist
+                Core.split(dst,image);
+
+                // each matrix is 50*50 where each index has an array of type double
                 Mat h = image.get(0);
                 Mat s = image.get(1);
                 Mat v = image.get(2);
@@ -142,19 +153,17 @@ public class MainActivity extends AppCompatActivity {
                 double s_sum =  0;
                 double v_sum = 0;
                 //looping through the matrcies and summing all up
-                Log.w("Here 6",h.cols()+" "+h.rows());
-//
-                for( int i = 0 ; i < h.cols() ; i++){
-                    for(int j = 0 ; j < h.rows() ; j++){
+
+                for( int i = 0 ; i < h.rows() ; i++){
+                    for(int j = 0 ; j < h.cols() ; j++){
                         h_sum += (h.get(i,j)[0]/180);
                         s_sum += (s.get(i,j)[0]/255);
                         v_sum += (v.get(i,j)[0]/255);
                     }
                 }
-//
-//                Log.w("HSV > ","H: "+h_sum+" S: "+s_sum+" V: "+v_sum);
+
                 textView = (TextView) findViewById(R.id.textView);
-               textView.setText("H: "+h_sum/(h.rows()*h.cols())+" S: "+s_sum/(h.rows()*h.cols())+" V: "+v_sum/(h.rows()*h.cols()));
+                textView.setText(" S: "+(s_sum/(h.rows()*h.cols())- c)/m);
             }
         }
     }
@@ -164,7 +173,7 @@ public class MainActivity extends AppCompatActivity {
         switch(requestCode){
             case RequestPermissionCode:
             {
-                if(grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED){
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED){
                     Toast.makeText(this , "Permission Granted ",Toast.LENGTH_SHORT).show();
                 }
                 else {
@@ -174,10 +183,8 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void CropImage () {
-        Toast.makeText(this , "In crop" , Toast.LENGTH_LONG).show();
+    private void CropImage() {
         try {
-
             cropIntent = new Intent ("com.android.camera.action.CROP");
             cropIntent.setDataAndType(uri,"image/*");
             cropIntent.putExtra("crop", true);

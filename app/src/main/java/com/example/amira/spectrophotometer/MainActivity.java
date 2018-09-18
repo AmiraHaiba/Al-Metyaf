@@ -14,7 +14,6 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
-import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -51,18 +50,18 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         textView = findViewById(R.id.textView);
-        add_data = (Button)findViewById(R.id.add_data);
+        add_data = findViewById(R.id.add_data);
         add_data.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-             slope =  (TextView) findViewById(R.id.slope);
-                intercept =  (TextView) findViewById(R.id.intercept);
+             slope = findViewById(R.id.slope);
+                intercept = findViewById(R.id.intercept);
                 if(!slope.getText().toString().trim().isEmpty() &&
-                        slope.getText().toString().trim() != "0" &&
+                        !slope.getText().toString().trim().equals("0") &&
                         !intercept.getText().toString().trim().isEmpty()){
                     try {
                         m = Double.parseDouble(slope.getText().toString().trim());
                         c = Double.parseDouble(intercept.getText().toString().trim());
-                        toolbar = (Toolbar) findViewById(R.id.toolbar);
+                        toolbar = findViewById(R.id.toolbar);
                         toolbar.setTitle("Crop Image");
                         setSupportActionBar(toolbar);
                         findViewById(R.id.form_layout).setVisibility(View.INVISIBLE);
@@ -77,7 +76,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
-        imageView = (ImageView)findViewById(R.id.imageView);
+        imageView = findViewById(R.id.imageView);
 
         int permissionCheck = ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.CAMERA);
         if (permissionCheck == PackageManager.PERMISSION_DENIED) {
@@ -124,10 +123,13 @@ public class MainActivity extends AppCompatActivity {
         else if (requestCode == 1){
             if(data != null){
                 Bundle bundle = data.getExtras();
-                Bitmap bitmap = bundle.getParcelable("data");
+                Bitmap bitmap;
+                assert bundle != null;
+                bitmap = bundle.getParcelable("data");
                 imageView.setImageBitmap(bitmap);
 
                 // Mat src = new Mat();
+                assert bitmap != null;
                 Mat src = new Mat(bitmap.getHeight(), bitmap.getWidth(), CvType.CV_8UC3);
 
                 //Turns the bitmap to a matrix
@@ -162,7 +164,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
 
-                textView = (TextView) findViewById(R.id.textView);
+                textView = findViewById(R.id.textView);
                 textView.setText(" S: "+(s_sum/(h.rows()*h.cols())- c)/m);
             }
         }
@@ -223,6 +225,6 @@ public class MainActivity extends AppCompatActivity {
     }
     private void GalleryOpen(){
         galIntent = new Intent (Intent.ACTION_PICK , MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-        startActivityForResult(Intent.createChooser(galIntent,"select image from galary"),2);
+        startActivityForResult(Intent.createChooser(galIntent,"select image from gallery"),2);
     }
 }
